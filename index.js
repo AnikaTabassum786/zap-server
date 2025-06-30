@@ -45,6 +45,7 @@ async function run() {
     const parcelCollection = db.collection('parcels')
     const paymentsCollection = db.collection('payments')
     const usersCollection = db.collection('users')
+    const riderCollection = db.collection('riders')
 
     //custom middlewares
 
@@ -94,7 +95,7 @@ async function run() {
 
      // parcels api
         // GET: All parcels OR parcels by user (created_by), sorted by latest
-        app.get('/parcels', async (req, res) => {
+        app.get('/parcels',verifyFBToken, async (req, res) => {
             try {
                 const userEmail = req.query.email;
 
@@ -174,7 +175,13 @@ async function run() {
 
          app.get('/payments', verifyFBToken,async (req, res) => {
             try {
+
                 const userEmail = req.query.email;
+                 console.log('Decoded',req.decoded)
+
+                if(req.decoded.email !== userEmail){
+                    return res.status(403).send({message:'Forbidden Access'})
+                }
 
                 const query = userEmail ? { email: userEmail } : {};
                 const options = { sort: { paid_at: -1 } }; // Latest first
@@ -228,6 +235,22 @@ async function run() {
             } catch (error) {
                 console.error('Payment processing failed:', error);
                 res.status(500).send({ message: 'Failed to record payment' });
+            }
+        });
+
+        app.post('/riders',async(req,res)=>{
+            const rider = req.body;
+            const result = await riderCollection.insertOne(rider)
+            res.send(result)
+        })
+
+        app.get("/riders/pending", async (req, res) => {
+            try {
+                const pendingRiders = await ridersCollection.find({ status: "pending" }).toArray();
+                res.send(pendingRiders);
+            } catch (error) {
+                console.error("Failed to load pending riders:", error);
+                res.status(500).send({ message: "Failed to load pending riders" });
             }
         });
 
