@@ -244,6 +244,9 @@ async function run() {
             res.send(result)
         })
 
+
+        // Find Pending status
+
         app.get("/riders/pending", async (req, res) => {
             try {
                 const pendingRiders = await ridersCollection.find({ status: "pending" }).toArray();
@@ -254,7 +257,7 @@ async function run() {
             }
         });
 
-         //updated status, approve or reject
+         //updated status, active or reject
          app.patch("/riders/:id/status", async (req, res) => {
             const { id } = req.params;
             const { status } = req.body;
@@ -276,6 +279,15 @@ async function run() {
                 res.status(500).send({ message: "Failed to update rider status" });
             }
         });
+
+
+        // Find active status
+        app.get("/riders/active", async (req, res) => {
+            const result = await ridersCollection.find({ status: "active" }).toArray();
+            res.send(result);
+        });
+
+
 
 
 
