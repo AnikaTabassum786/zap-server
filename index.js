@@ -96,8 +96,7 @@ async function run() {
             const regex = new RegExp(emailQuery, "i"); // case-insensitive partial match
 
             try {
-                const users = await usersCollection
-                    .find({ email: { $regex: regex } })
+                const users = await usersCollection.find({ email: { $regex: regex } })
                     // .project({ email: 1, createdAt: 1, role: 1 })
                     .limit(10)
                     .toArray();
