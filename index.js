@@ -240,7 +240,7 @@ async function run() {
 
         app.post('/riders',async(req,res)=>{
             const rider = req.body;
-            const result = await riderCollection.insertOne(rider)
+            const result = await ridersCollection.insertOne(rider)
             res.send(result)
         })
 
@@ -260,7 +260,7 @@ async function run() {
          //updated status, active or reject
          app.patch("/riders/:id/status", async (req, res) => {
             const { id } = req.params;
-            const { status } = req.body;
+            const { status,email } = req.body;
             const query = { _id: new ObjectId(id) }
             const updateDoc = {
                 $set:
@@ -272,8 +272,20 @@ async function run() {
             try {
                 const result = await ridersCollection.updateOne(
                     query, updateDoc
-
                 );
+                 
+                if(status === 'active'){
+                    const userQuery = {email};
+                    const userUpdatedDoc ={
+                        $set:{
+                            role: 'rider'
+                        }
+                    }
+
+                    const roleResult = await usersCollection.updateOne(userQuery,userUpdatedDoc)
+                    console.log(roleResult.modifiedCount)
+                };
+
                 res.send(result);
             } catch (err) {
                 res.status(500).send({ message: "Failed to update rider status" });
