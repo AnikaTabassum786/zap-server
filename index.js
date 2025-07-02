@@ -130,6 +130,31 @@ async function run() {
 
 
 
+        // GET: Get user role by email
+        app.get('/users/:email/role', async (req, res) => {
+            try {
+                const email = req.params.email;
+
+                if (!email) {
+                    return res.status(400).send({ message: 'Email is required' });
+                }
+
+                const user = await usersCollection.findOne({ email });
+
+                if (!user) {
+                    return res.status(404).send({ message: 'User not found' });
+                }
+
+                res.send({ role: user.role || 'user' }); //// Defaults to 'user'
+            } catch (error) {
+                console.error('Error getting user role:', error);
+                res.status(500).send({ message: 'Failed to get role' });
+            }
+        });
+
+
+
+
     // app.get('/parcels', async(req,res)=>{
     //     const parcels = await parcelCollection.find().toArray();
     //     res.send(parcels)
