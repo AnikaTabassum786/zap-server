@@ -108,7 +108,7 @@ async function run() {
         });
         
     //  patch
-      app.patch("/users/:id/role", verifyFBToken, verifyAdmin, async (req, res) => {
+      app.patch("/users/:id/role", verifyFBToken, async (req, res) => {
             const { id } = req.params;
             const { role } = req.body;
 
@@ -293,6 +293,7 @@ async function run() {
             try {
                 const pendingRiders = await ridersCollection.find({ status: "pending" }).toArray();
                 res.send(pendingRiders);
+                console.log(pendingRiders)
             } catch (error) {
                 console.error("Failed to load pending riders:", error);
                 res.status(500).send({ message: "Failed to load pending riders" });
