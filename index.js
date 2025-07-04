@@ -172,15 +172,28 @@ async function run() {
 
      // parcels api
         // GET: All parcels OR parcels by user (created_by), sorted by latest
-        app.get('/parcels',verifyFBToken, async (req, res) => {
-            try {
-                const userEmail = req.query.email;
 
-                const query = userEmail ? { created_by: userEmail } : {};
+         app.get('/parcels', verifyFBToken, async (req, res) => {
+            try {
+                const { email, payment_status, delivery_status } = req.query;
+                let query = {}
+                if (email) {
+                    query = { created_by: email }
+                }
+
+                if (payment_status) {
+                    query.payment_status = payment_status
+                }
+
+                if (delivery_status) {
+                    query.delivery_status = delivery_status
+                }
+
                 const options = {
                     sort: { createdAt: -1 }, // Newest first
                 };
-                console.log(query)
+
+                console.log('parcel query', req.query, query)
 
                 const parcels = await parcelCollection.find(query, options).toArray();
                 res.send(parcels);
@@ -189,6 +202,24 @@ async function run() {
                 res.status(500).send({ message: 'Failed to get parcels' });
             }
         });
+
+        // app.get('/parcels',verifyFBToken, async (req, res) => {
+        //     try {
+        //         const userEmail = req.query.email;
+
+        //         const query = userEmail ? { created_by: userEmail } : {};
+        //         const options = {
+        //             sort: { createdAt: -1 }, // Newest first
+        //         };
+        //         console.log(query)
+
+        //         const parcels = await parcelCollection.find(query, options).toArray();
+        //         res.send(parcels);
+        //     } catch (error) {
+        //         console.error('Error fetching parcels:', error);
+        //         res.status(500).send({ message: 'Failed to get parcels' });
+        //     }
+        // });
 
 
      // POST: Create a new parcel
@@ -232,6 +263,41 @@ async function run() {
             } catch (error) {
                 console.error('Error fetching parcel:', error);
                 res.status(500).send({ message: 'Failed to fetch parcel' });
+            }
+        });
+
+
+        app.patch("/parcels/:id/assign", async (req, res) => {
+            const parcelId = req.params.id;
+            const { riderId, riderName } = req.body;
+
+            try {
+                // Update parcel
+                await parcelCollection.updateOne(
+                    { _id: new ObjectId(parcelId) },
+                    {
+                        $set: {
+                            delivery_status: "in_transit",
+                            assigned_rider_id: riderId,
+                            assigned_rider_name: riderName,
+                        },
+                    }
+                );
+
+                // Update rider
+                await ridersCollection.updateOne(
+                    { _id: new ObjectId(riderId) },
+                    {
+                        $set: {
+                            work_status: "in_delivery",
+                        },
+                    }
+                );
+
+                res.send({ message: "Rider assigned" });
+            } catch (err) {
+                console.error(err);
+                res.status(500).send({ message: "Failed to assign rider" });
             }
         });
 
@@ -375,6 +441,25 @@ async function run() {
         app.get("/riders/active",verifyFBToken,verifyAdmin, async (req, res) => {
             const result = await ridersCollection.find({ status: "active" }).toArray();
             res.send(result);
+        });
+
+
+        app.get("/riders/available", async (req, res) => {
+            const { district } = req.query;
+
+            try {
+                const riders = await ridersCollection
+                    .find({
+                        district,
+                        // status: { $in: ["approved", "active"] },
+                        // work_status: "available",
+                    })
+                    .toArray();
+
+                res.send(riders);
+            } catch (err) {
+                res.status(500).send({ message: "Failed to load riders" });
+            }
         });
 
 
