@@ -277,7 +277,7 @@ async function run() {
                     { _id: new ObjectId(parcelId) },
                     {
                         $set: {
-                            delivery_status: "in_transit",
+                            delivery_status: "rider_assigned",
                             assigned_rider_id: riderId,
                             assigned_rider_name: riderName,
                             assigned_rider_email:riderEmail
@@ -399,6 +399,31 @@ async function run() {
             } catch (error) {
                 console.error("Failed to load pending riders:", error);
                 res.status(500).send({ message: "Failed to load pending riders" });
+            }
+        });
+
+         app.get('/rider/parcels', async (req, res) => {
+            try {
+                const email = req.query.email; ///rider/parcels?email=abc@gmail.com
+
+                if (!email) {
+                    return res.status(400).send({ message: 'Rider email is required' });
+                }
+
+                const query = {
+                    assigned_rider_email: email,
+                    delivery_status: { $in: ['rider_assigned', 'in_transit'] },
+                };
+
+                const options = {
+                    sort: { creation_date: -1 }, // Newest first
+                };
+
+                const parcels = await parcelsCollection.find(query, options).toArray();
+                res.send(parcels);
+            } catch (error) {
+                console.error('Error fetching rider tasks:', error);
+                res.status(500).send({ message: 'Failed to get rider tasks' });
             }
         });
 
