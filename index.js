@@ -154,7 +154,7 @@ async function run() {
         app.get('/users/:email/role', async (req, res) => {
             try {
                 const email = req.params.email;
-                console.log(email)
+                // console.log(email)
 
                 if (!email) {
                     return res.status(400).send({ message: 'Email is required' });
@@ -331,9 +331,15 @@ async function run() {
             }
 
             try {
+                // const result = await parcelCollection.updateOne(
+                //     { _id: new ObjectId(parcelId) },
+                //     { $set: {delivery_status:status}}
+                // );
                 const result = await parcelCollection.updateOne(
                     { _id: new ObjectId(parcelId) },
-                    { $set: {delivery_status:status}}
+                    {
+                        $set: updatedDoc
+                    }
                 );
                 res.send(result);
             } catch (error) {
