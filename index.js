@@ -84,6 +84,16 @@ async function run() {
         next()
     }
 
+    const verifyRider = async (req,res,next) =>{
+        const email = req.decoded.email;
+        const query = {email}
+        const user = await usersCollection.findOne(query);
+        if(!user || user.role !== 'rider'){
+            return res.status(403).send({message:'forbidden access'})
+        }
+        next()
+    }
+
     app.post('/users', async(req,res) =>{
         const email = req.body.email;
 
@@ -302,6 +312,34 @@ async function run() {
             }
         });
 
+
+         app.patch("/parcels/:id/status", async (req, res) => {
+            const parcelId = req.params.id;
+            const { status } = req.body;
+            
+            const updatedDoc = {
+                delivery_status: status
+            }
+
+            if (status === 'in_transit') {
+                updatedDoc.picked_at = new Date().toISOString()
+            }
+            else if (status === 'delivered') {
+                updatedDoc.delivered_at = new Date().toISOString()
+            }
+
+            try {
+                const result = await parcelCollection.updateOne(
+                    { _id: new ObjectId(parcelId) },
+                    { $set: {delivery_status:status}}
+                );
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ message: "Failed to update status" });
+            }
+        });
+
+
          app.post('/create-payment-intent', async (req, res) => {
             const amountInCents = req.body.amountInCents
             try {
@@ -402,7 +440,7 @@ async function run() {
             }
         });
 
-         app.get('/rider/parcels', async (req, res) => {
+         app.get('/rider/parcels',verifyFBToken,verifyRider, async (req, res) => {
             try {
                 const email = req.query.email; ///rider/parcels?email=abc@gmail.com
 
@@ -419,7 +457,7 @@ async function run() {
                     sort: { creation_date: -1 }, // Newest first
                 };
 
-                const parcels = await parcelsCollection.find(query, options).toArray();
+                const parcels = await parcelCollection.find(query, options).toArray();
                 res.send(parcels);
             } catch (error) {
                 console.error('Error fetching rider tasks:', error);
@@ -489,7 +527,34 @@ async function run() {
         });
 
 
+        app.get('/rider/completed-parcels', verifyFBToken, verifyRider, async (req, res) => {
+            try {
+                const email = req.query.email;
 
+                if (!email) {
+                    return res.status(400).send({ message: 'Rider email is required' });
+                }
+
+                const query = {
+                    assigned_rider_email: email,
+                    delivery_status: {
+                        $in: ['delivered', 'service_center_delivered']
+                    },
+                };
+
+                const options = {
+                    sort: { creation_date: -1 }, // Latest first
+                };
+
+                const completedParcels = await parcelCollection.find(query, options).toArray();
+
+                res.send(completedParcels);
+
+            } catch (error) {
+                console.error('Error loading completed parcels:', error);
+                res.status(500).send({ message: 'Failed to load completed deliveries' });
+            }
+        });
 
 
 
