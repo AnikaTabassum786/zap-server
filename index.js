@@ -154,12 +154,14 @@ async function run() {
         app.get('/users/:email/role', async (req, res) => {
             try {
                 const email = req.params.email;
+                console.log(email)
 
                 if (!email) {
                     return res.status(400).send({ message: 'Email is required' });
                 }
 
                 const user = await usersCollection.findOne({ email });
+                // db.users.findOne({ email: "puma@gmail.com" })
 
                 if (!user) {
                     return res.status(404).send({ message: 'User not found' });
@@ -337,6 +339,21 @@ async function run() {
             } catch (error) {
                 res.status(500).send({ message: "Failed to update status" });
             }
+        });
+
+
+        app.patch("/parcels/:id/cashout", async (req, res) => {
+            const id = req.params.id;
+            const result = await parcelCollection.updateOne(
+                { _id: new ObjectId(id) },
+                {
+                    $set: {
+                        cashout_status: "cashed_out",
+                        cashed_out_at: new Date()
+                    }
+                }
+            );
+            res.send(result);
         });
 
 
