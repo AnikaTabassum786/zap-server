@@ -46,6 +46,7 @@ async function run() {
     const paymentsCollection = db.collection('payments')
     const usersCollection = db.collection('users')
     const ridersCollection = db.collection('riders')
+    const trackingsCollection = db.collection("trackings");
 
     //custom middlewares
 
@@ -578,6 +579,36 @@ async function run() {
                 res.status(500).send({ message: 'Failed to load completed deliveries' });
             }
         });
+
+
+         app.get("/trackings/:trackingId", async (req, res) => {
+            const trackingId = req.params.trackingId;
+
+            const updates = await trackingsCollection
+                .find({ tracking_id: trackingId })
+                .sort({ timestamp: 1 }) // sort by time ascending
+                .toArray();
+
+            res.json(updates);
+        });
+
+        app.post("/trackings", async (req, res) => {
+            const update = req.body;
+
+            update.timestamp = new Date(); // ensure correct timestamp
+            if (!update.tracking_id || !update.status) {
+                return res.status(400).json({ message: "tracking_id and status are required." });
+            }
+
+            const result = await trackingsCollection.insertOne(update);
+            res.status(201).json(result);
+        });
+
+        app.post('/riders', async (req, res) => {
+            const rider = req.body;
+            const result = await ridersCollection.insertOne(rider);
+            res.send(result);
+        })
 
 
 
